@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "main": "main.js",
   "license": "MIT",
+  "scripts": {
+    "start": "parcel index.html"
+  },
   "devDependencies": {
     "@parcel/transformer-typescript-tsc": "^2.3.2",
     "@parcel/validator-typescript": "^2.3.1",
@@ -11,6 +14,7 @@
     "typescript": ">=3.0.0"
   },
   "dependencies": {
+    "@tidyjs/tidy": "^2.4.5",
     "@types/plotly.js": "^1.54.20",
     "@types/prop-types": "^15.7.4",
     "@types/react": "^17.0.39",
@@ -18,7 +22,7 @@
     "@types/react-plotly.js": "^2.5.0",
     "buffer": "^6.0.3",
     "class-transformer": "^0.5.1",
-    "d3": "^7.1.1",
+    "d3": "^7.3.0",
     "mobx": "^6.4.0",
     "mobx-react": "^7.3.0",
     "plotly.js": "^2.9.0",
@@ -26,6 +30,7 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-plotly.js": "^2.5.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "water.css": "^2.1.1"
   }
 }

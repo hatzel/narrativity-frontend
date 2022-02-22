@@ -1,69 +1,75 @@
 import { Expose, Type, Transform } from "class-transformer";
 
-enum EventType {
+enum EventKind {
     NON_EVENT = 0,
     CHANGE_OF_STATE = 1,
     PROCESS = 2,
     STATIVE_EVENT = 3,
 }
 
-class EventTypeUtil {
+class EventKindUtil {
     static fromString(name: string) {
         if (name == "non_event") {
-            return EventType.NON_EVENT;
+            return EventKind.NON_EVENT;
         }
         if (name == "change_of_state") {
-            return EventType.CHANGE_OF_STATE;
+            return EventKind.CHANGE_OF_STATE;
         }
         if (name == "process") {
-            return EventType.PROCESS;
+            return EventKind.PROCESS;
         }
         if (name == "stative_event") {
-            return EventType.STATIVE_EVENT;
+            return EventKind.STATIVE_EVENT;
         }
         throw "Invalid Event variant" + name;
     }
 
-    static toString(eventType: EventType) {
-        if (eventType == EventType.NON_EVENT) {
+    static toString(eventType: EventKind) {
+        if (eventType == EventKind.NON_EVENT) {
             return "non_event";
         }
-        if (eventType == EventType.CHANGE_OF_STATE) {
+        if (eventType == EventKind.CHANGE_OF_STATE) {
             return "change_of_state";
         }
-        if (eventType == EventType.PROCESS) {
+        if (eventType == EventKind.PROCESS) {
             return "process";
         }
-        if (eventType == EventType.STATIVE_EVENT) {
+        if (eventType == EventKind.STATIVE_EVENT) {
             return "stative_event";
         }
     }
 }
 
-export class Event {
-    @Expose() start: bigint
-    @Expose() end: bigint
-    @Expose() spans: Array<[bigint, bigint]>
+export class NarrativeEvent {
+    @Expose()
+    start: number
+    @Expose()
+    end: number
+    @Expose()
+    spans: Array<[number, number]>
 
-    @Transform(({ value }) => EventTypeUtil.fromString(value), { toClassOnly: true })
-    @Expose() predicted: EventType
+    @Expose()
+    @Transform(({ value }) => EventKindUtil.fromString(value), { toClassOnly: true })
+    predicted: EventKind
 
-    @Expose() predicted_score: bigint
+    @Expose({name: "predicted_score"}) predictedScore: number
 
-    constructor(start: bigint, end: bigint, spans: Array<[bigint, bigint]>, predicted: EventType, predicted_score: bigint) {
+    constructor(start: number, end: number, spans: Array<[number, number]>, predicted: EventKind, predictedScore: number) {
         this.start = start;
         this.end = end;
         this.spans = spans;
         this.predicted = predicted;
-        this.predicted_score = predicted_score;
+        this.predictedScore = predictedScore;
     }
 }
 
 export class Response {
-    @Expose() text: string
-    @Expose() annotations: Array<Event>
+    text: string
+    @Expose()
+    @Type(() => NarrativeEvent)
+    annotations: NarrativeEvent[];
 
-    constructor(text: string, annotations: Array<Event>) {
+    constructor(text: string, annotations: NarrativeEvent[]) {
         this.text = text
         this.annotations = annotations
     }
