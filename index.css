@@ -2,3 +2,20 @@
 
 body {
 }
+
+.textContainer {
+    height: 10rem;
+    overflow-y: scroll;
+}
+
+.verbPhrase {
+    transition: 0.1s
+}
+
+.verbPhrase.active {
+    background-color: lightcoral;
+}
+
+.verbPhrase:hover {
+    background-color: lightskyblue;
+}

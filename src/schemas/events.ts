@@ -54,6 +54,10 @@ export class NarrativeEvent {
 
     @Expose({name: "predicted_score"}) predictedScore: number
 
+    getId = (): string => {
+        return "span" + this.start.toString() + "_" + this.end.toString();
+    }
+
     constructor(start: number, end: number, spans: Array<[number, number]>, predicted: EventKind, predictedScore: number) {
         this.start = start;
         this.end = end;

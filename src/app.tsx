@@ -31,6 +31,7 @@ export class RootStore {
 
 class UiStore {
     @observable currentText: string = "";
+    @observable activeNarrativeEventId: string | undefined = undefined;
 
     constructor() {
         mobx.makeObservable(this)
@@ -46,7 +47,7 @@ class SmoothingConfig {
 }
 
 class AnnotationStore {
-    @observable submitText: string = "lol";
+    @observable submitText: string = "";
     @observable annotations: NarrativeEvent[] = [];
     @observable smoothingConfig: SmoothingConfig = new SmoothingConfig();
 
@@ -77,10 +78,9 @@ class AnnotationStore {
             this.annotations,
             tidy.map((el) => {return {value: el.predictedScore}}),
             tidy.mutateWithSummary({
-                movingAvg: tidy.roll(this.smoothingConfig.windowSize, tidy.mean('value')),
+                movingAvg: tidy.roll(this.smoothingConfig.windowSize, tidy.mean("value"), {partial: true}),
             }),
         );
-        console.log(out);
         return out.map((el) => el["movingAvg"])
     }
 
@@ -110,7 +110,8 @@ export class App extends React.Component<AppProps, any> {
         const {rootStore} = this.props
         return <div>
             <TextForm rootStore={rootStore}/>
-            <EventGraph annotationStore={rootStore.annotationStore}/>
+            <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore}/>
+            <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore}/>
         </div>
     }
 }
@@ -152,13 +153,13 @@ let sliderSteps = (): Partial<Plotly.SliderStep>[] => {
 }
 
 interface EventGraphProps {
-    annotationStore: AnnotationStore,
+    annotationStore: AnnotationStore;
+    uiStore: UiStore;
 }
 
 @observer
 class EventGraph extends React.Component<EventGraphProps, any> {
     handleWindowsizeChange = (event: React.FormEvent<HTMLInputElement>) => {
-        console.log(event)
         mobx.runInAction(() => {
             this.props.annotationStore.smoothingConfig.windowSize = parseInt(event.currentTarget.value);
         });
@@ -174,6 +175,12 @@ class EventGraph extends React.Component<EventGraphProps, any> {
     sliderChange = (event: Plotly.SliderChangeEvent) => {
         mobx.runInAction(() => {
             this.props.annotationStore.smoothingConfig.windowSize = parseInt(event.step.label);
+        });
+    }
+
+    onClick = (event: Plotly.PlotMouseEvent) => {
+        mobx.runInAction(() => {
+            this.props.uiStore.activeNarrativeEventId = this.props.annotationStore.annotations[event.points[0].pointNumber].getId()
         });
     }
 
@@ -201,7 +208,8 @@ class EventGraph extends React.Component<EventGraphProps, any> {
                     easing: "linear",
                     duration: 300
                 }
-            }}
+            }},
+            onClick={this.onClick}
             data={[{
                 x: this.props.annotationStore.xValues,
                 y: this.props.annotationStore.smoothyValues,
@@ -211,5 +219,66 @@ class EventGraph extends React.Component<EventGraphProps, any> {
             onSliderChange={this.sliderChange}
             />
         );
+    }
+}
+
+interface TextViewProps {
+    annotationStore: AnnotationStore;
+    uiStore: UiStore;
+}
+
+@observer
+class TextView extends React.Component<TextViewProps> {
+    * getRelevantAnnotaitons(this: TextView, start: number, end: number) {
+        for (let annotation of this.props.annotationStore.annotations) {
+            if (annotation.start >= start && annotation.start <= end) {
+                if (annotation.end > end) {
+                    console.warn("Annotation across paragraphs");
+                    yield annotation;
+                } else {
+                    yield annotation;
+                }
+            }
+        }
+    }
+
+    render() {
+        let paragraphs: React.DetailedReactHTMLElement<{}, HTMLElement>[] = [];
+        let startIndex: number = 0;
+        let n = 0;
+        for (let paragraphText of this.props.annotationStore.submitText.split("\n\n")) {
+            let annotations = this.getRelevantAnnotaitons(startIndex, startIndex + paragraphText.length)
+            let inner: any[] = []
+            let paragraphIndex = 0;
+            // TODO: this is currently broken annotations in other annotations
+            for (let anno of annotations) {
+                inner.push(paragraphText.slice(paragraphIndex, anno.start - startIndex));
+                let spanStart = anno.start - startIndex;
+                let spanEnd = Math.min(
+                    anno.end - startIndex,
+                    startIndex + paragraphText.length
+                );
+                let props = {className: "verbPhrase", "id": anno.getId()}
+                if (anno.getId() == this.props.uiStore.activeNarrativeEventId) {
+                    props.className += " active"
+                }
+                inner.push(
+                    React.createElement(
+                        "span",
+                        props,
+                        paragraphText.slice(spanStart, spanEnd)
+                    )
+                );
+                paragraphIndex = spanEnd;
+            }
+            inner.push(paragraphText.slice(paragraphIndex, paragraphText.length))
+            paragraphs.push(React.createElement("p", {key: "pargraph" + n.toString()}, inner));
+            startIndex += paragraphText.length;
+            startIndex += 2;
+            n++;
+        }
+        return <div className="textContainer">
+            {paragraphs}
+        </div>
     }
 }
