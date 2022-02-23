@@ -9,7 +9,7 @@ import * as mobx from "mobx";
 import { plainToInstance } from "class-transformer";
 import * as tidy from "@tidyjs/tidy";
 
-import { Response, NarrativeEvent } from "./schemas/events";
+import { Response, NarrativeEvent, EventKindUtil } from "./schemas/events";
 
 mobx.configure({
     enforceActions: "always",
@@ -32,6 +32,7 @@ export class RootStore {
 class UiStore {
     @observable currentText: string = "";
     @observable activeNarrativeEventId: string | undefined = undefined;
+    @observable shouldScrollToEvent: boolean = false;
 
     constructor() {
         mobx.makeObservable(this)
@@ -108,11 +109,15 @@ interface AppProps {
 export class App extends React.Component<AppProps, any> {
     render() {
         const {rootStore} = this.props
-        return <div>
-            <TextForm rootStore={rootStore}/>
-            <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore}/>
-            <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore}/>
-        </div>
+        return <>
+            <div className="column controlContainer">
+                <TextForm rootStore={rootStore} />
+                <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+            </div>
+            <div className="column textContainer">
+                <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+            </div>
+        </>
     }
 }
 
@@ -131,7 +136,7 @@ class TextForm extends React.Component<TextFormProps, any> {
     }
 
     render() {
-        return <div>
+        return <div className="formContainer">
             <form onSubmit={this.handleSubmit} id="inputForm">
                 <textarea name="inputText" defaultValue="Ich teste das narrativiäts Modell!"/>
                 <button type="submit">Submit</button>
@@ -181,6 +186,7 @@ class EventGraph extends React.Component<EventGraphProps, any> {
     onClick = (event: Plotly.PlotMouseEvent) => {
         mobx.runInAction(() => {
             this.props.uiStore.activeNarrativeEventId = this.props.annotationStore.annotations[event.points[0].pointNumber].getId()
+            this.props.uiStore.shouldScrollToEvent = true;
         });
     }
 
@@ -189,17 +195,27 @@ class EventGraph extends React.Component<EventGraphProps, any> {
             layout={{
                 title: "Narrativity Plot",
                 autosize: false,
-                yaxis: {
-                    range: [0, 5]
+                xaxis: {
+                    range: [0, this.props.annotationStore.annotations.length],
+                    title: {
+                        text: "Event Number"
+                    }
                 },
+                yaxis: {
+                    range: [0, 5],
+                    title: {
+                        text: "Smoothed Narrativity Score"
+                    }
+                },
+                width: 800,
                 sliders: [{
-                    pad: {t: 30},
+                    pad: {t: 80},
                     currentvalue: {
                         xanchor: "left",
                         prefix: "Window Size: ",
                         font: {
                             color: '#888',
-                            size: 20
+                            size: 12
                         }
                     },
                     steps: sliderSteps()
@@ -208,7 +224,10 @@ class EventGraph extends React.Component<EventGraphProps, any> {
                     easing: "linear",
                     duration: 300
                 }
-            }},
+            }}
+            config={{
+                displaylogo: false
+            }}
             onClick={this.onClick}
             data={[{
                 x: this.props.annotationStore.xValues,
@@ -217,8 +236,7 @@ class EventGraph extends React.Component<EventGraphProps, any> {
                 type: 'scatter'
             }]}
             onSliderChange={this.sliderChange}
-            />
-        );
+        />
     }
 }
 
@@ -229,6 +247,14 @@ interface TextViewProps {
 
 @observer
 class TextView extends React.Component<TextViewProps> {
+    activeNarrativeEvent: React.RefObject<HTMLSpanElement> = React.createRef();
+
+    scrollToActiveEvent = () => {
+        if (this.activeNarrativeEvent.current) {
+            this.activeNarrativeEvent.current.scrollIntoView({behavior: "smooth"});
+        }
+    }
+
     * getRelevantAnnotaitons(this: TextView, start: number, end: number) {
         for (let annotation of this.props.annotationStore.annotations) {
             if (annotation.start >= start && annotation.start <= end) {
@@ -258,15 +284,22 @@ class TextView extends React.Component<TextViewProps> {
                     anno.end - startIndex,
                     startIndex + paragraphText.length
                 );
-                let props = {className: "verbPhrase", "id": anno.getId()}
+                let props: {className: string, id: string, ref: React.RefObject<HTMLSpanElement> | null} = {
+                    className: "verbPhrase",
+                    "id": anno.getId(),
+                    ref: null
+                };
                 if (anno.getId() == this.props.uiStore.activeNarrativeEventId) {
+                    props.ref = this.activeNarrativeEvent;
                     props.className += " active"
                 }
+                let eventKind = EventKindUtil.toString(anno.predicted);
+                let subscriptClass =  "eventKindAnno " + eventKind;
                 inner.push(
                     React.createElement(
                         "span",
                         props,
-                        paragraphText.slice(spanStart, spanEnd)
+                        [paragraphText.slice(spanStart, spanEnd), <sub className={subscriptClass}>{eventKind}</sub>]
                     )
                 );
                 paragraphIndex = spanEnd;
@@ -277,8 +310,17 @@ class TextView extends React.Component<TextViewProps> {
             startIndex += 2;
             n++;
         }
-        return <div className="textContainer">
+        return <div className="">
             {paragraphs}
         </div>
+    }
+
+    componentDidUpdate() {
+        if (this.props.uiStore.shouldScrollToEvent) {
+            this.scrollToActiveEvent()
+            mobx.runInAction(() => {
+                this.props.uiStore.shouldScrollToEvent = false;
+            }
+        } 
     }
 }

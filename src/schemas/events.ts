@@ -7,7 +7,7 @@ enum EventKind {
     STATIVE_EVENT = 3,
 }
 
-class EventKindUtil {
+export class EventKindUtil {
     static fromString(name: string) {
         if (name == "non_event") {
             return EventKind.NON_EVENT;
