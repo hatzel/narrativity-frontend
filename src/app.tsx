@@ -10,6 +10,7 @@ import { plainToInstance } from "class-transformer";
 import * as tidy from "@tidyjs/tidy";
 
 import { Response, NarrativeEvent, EventKindUtil } from "./schemas/events";
+import LoadingOverlay from "react-loading-overlay";
 
 mobx.configure({
     enforceActions: "always",
@@ -32,7 +33,8 @@ export class RootStore {
 class UiStore {
     @observable currentText: string = "";
     @observable activeNarrativeEventId: string | undefined = undefined;
-    @observable shouldScrollToEvent: boolean = false;
+    shouldScrollToEvent: boolean = false;
+    @observable loading = false;
 
     constructor() {
         mobx.makeObservable(this)
@@ -70,6 +72,7 @@ class AnnotationStore {
                 this.submitText = text;
             });
         });
+        return promise;
     }
 
     @computed
@@ -109,7 +112,11 @@ interface AppProps {
 export class App extends React.Component<AppProps, any> {
     render() {
         const {rootStore} = this.props
-        return <>
+        return <LoadingOverlay
+            active={rootStore.uiStore.loading}
+            spinner
+            text="Running Model"
+        >
             <div className="column controlContainer">
                 <TextForm rootStore={rootStore} />
                 <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
@@ -117,7 +124,7 @@ export class App extends React.Component<AppProps, any> {
             <div className="column textContainer">
                 <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
             </div>
-        </>
+        </LoadingOverlay>
     }
 }
 
@@ -129,8 +136,13 @@ interface TextFormProps {
 class TextForm extends React.Component<TextFormProps, any> {
     handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         mobx.runInAction(() => {
+            this.props.rootStore.uiStore.loading = true;
             this.props.rootStore.uiStore.currentText = event.currentTarget.inputText.value;
-            this.props.rootStore.annotationStore.fetchEventAnnotations(this.props.rootStore.uiStore.currentText);
+            this.props.rootStore.annotationStore.fetchEventAnnotations(this.props.rootStore.uiStore.currentText).then(() => {
+                mobx.runInAction(() => {
+                    this.props.rootStore.uiStore.loading = false;
+                })
+            });
         });
         event.preventDefault();
     }
