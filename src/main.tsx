@@ -1,5 +1,6 @@
 import ReactDOM from "react-dom";
-import { App, RootStore } from "./app"
+import { App } from "./app"
+import { RootStore } from "./stores"
 
 let rootStore: RootStore = new RootStore();
 const container: HTMLElement | null = document.getElementById("app");

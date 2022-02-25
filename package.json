@@ -1,12 +1,12 @@
 {
   "name": "event-graph",
   "version": "1.0.0",
-  "main": "main.js",
   "license": "MIT",
   "scripts": {
     "start": "parcel index.html"
   },
   "devDependencies": {
+    "@parcel/reporter-bundle-analyzer": "^2.3.2",
     "@parcel/transformer-typescript-tsc": "^2.3.2",
     "@parcel/validator-typescript": "^2.3.1",
     "parcel": "^2.0.1",

@@ -1,15 +1,13 @@
 import React from "react";
-import PropTypes from "prop-types";
 import "reflect-metadata";
 
 import Plot from "react-plotly.js";
-import { MobXProviderContext, observer } from "mobx-react";
-import { observable, computed, action } from "mobx";
+import { observer } from "mobx-react";
 import * as mobx from "mobx";
-import { plainToInstance } from "class-transformer";
-import * as tidy from "@tidyjs/tidy";
+import { RootStore, UiStore, AnnotationStore } from "./stores";
+import ErrorBox from "./components/errorBox";
 
-import { Response, NarrativeEvent, EventKindUtil } from "./schemas/events";
+import { NarrativeEvent, EventKindUtil } from "./schemas/events";
 import LoadingOverlay from "react-loading-overlay";
 
 mobx.configure({
@@ -21,90 +19,6 @@ mobx.configure({
 })
 
 
-export class RootStore {
-    @observable uiStore = new UiStore();
-    @observable annotationStore = new AnnotationStore();
-
-    constructor() {
-        mobx.makeObservable(this)
-    }
-}
-
-class UiStore {
-    @observable currentText: string = "";
-    @observable activeNarrativeEventId: string | undefined = undefined;
-    @observable hoveredNarrativeEventId: string | undefined = undefined;
-    shouldScrollToEvent: boolean = false;
-    @observable loading = false;
-
-    constructor() {
-        mobx.makeObservable(this)
-    }
-}
-
-class SmoothingConfig {
-    @observable windowSize: number = 10
-
-    constructor() {
-        mobx.makeObservable(this)
-    }
-}
-
-class AnnotationStore {
-    @observable submitText: string = "";
-    @observable annotations: NarrativeEvent[] = [];
-    @observable smoothingConfig: SmoothingConfig = new SmoothingConfig();
-
-    constructor() {
-        mobx.makeObservable(this)
-    }
-
-    fetchEventAnnotations(text: string) {
-        let promise = fetch("http://localhost:8080/predictions/ts_test", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({"text": text})
-        }).then(resp => resp.json()).then(data => {
-            let response = plainToInstance(Response, data as object, { excludeExtraneousValues: true });
-            mobx.runInAction(() => {
-                this.annotations = response.annotations;
-                this.submitText = text;
-            });
-        });
-        return promise;
-    }
-
-    @computed
-    get smoothyValues(): number[] {
-        let values = this.yValues.map((el): object => { return {value: el} });
-        let out = tidy.tidy(
-            this.annotations,
-            tidy.map((el) => {return {value: el.predictedScore}}),
-            tidy.mutateWithSummary({
-                movingAvg: tidy.roll(this.smoothingConfig.windowSize, tidy.mean("value"), {partial: true}),
-            }),
-        );
-        return out.map((el) => el["movingAvg"])
-    }
-
-    @computed
-    get yValues(): number[] {
-        return this.annotations.map((anno) => anno.predictedScore);
-    }
-
-    @computed
-    get texts(): string[] {
-        return this.annotations.map((anno) => this.submitText.slice(anno.start, anno.end))
-    }
-
-    @computed
-    get xValues(): number[] {
-        return Array.from(this.annotations.entries()).map(([index, anno]): number => index);
-    }
-}
-
 interface AppProps {
     rootStore: RootStore,
 };
@@ -113,19 +27,30 @@ interface AppProps {
 export class App extends React.Component<AppProps, any> {
     render() {
         const {rootStore} = this.props
+        let errorBox;
+        if (rootStore.uiStore.showingError) {
+            errorBox = <div className="errorBox"><p>{rootStore.uiStore.errorText}</p></div>
+        } else {
+            errorBox = <></>
+        }
         return <LoadingOverlay
-            active={rootStore.uiStore.loading}
-            spinner
-            text="Running Model"
-        >
-            <div className="column controlContainer">
-                <TextForm rootStore={rootStore} />
-                <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
-            </div>
-            <div className="column textContainer">
-                <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
-            </div>
-        </LoadingOverlay>
+                active={rootStore.uiStore.loading}
+                spinner
+                text="Running Model"
+            >
+                <div className="column controlContainer">
+                    <ErrorBox
+                        text={this.props.rootStore.uiStore.errorText}
+                        visible={this.props.rootStore.uiStore.showingError}
+                        closeCallback={() => {this.props.rootStore.uiStore.showingError = false}}
+                    />
+                    <TextForm rootStore={rootStore} />
+                    <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+                </div>
+                <div className="column textContainer">
+                    <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+                </div>
+            </LoadingOverlay>
     }
 }
 
@@ -139,7 +64,7 @@ class TextForm extends React.Component<TextFormProps, any> {
         mobx.runInAction(() => {
             this.props.rootStore.uiStore.loading = true;
             this.props.rootStore.uiStore.currentText = event.currentTarget.inputText.value;
-            this.props.rootStore.annotationStore.fetchEventAnnotations(this.props.rootStore.uiStore.currentText).then(() => {
+            this.props.rootStore.annotationStore.fetchEventAnnotations(this.props.rootStore.uiStore.currentText, this.props.rootStore.uiStore).then(() => {
                 mobx.runInAction(() => {
                     this.props.rootStore.uiStore.loading = false;
                 })
@@ -387,7 +312,7 @@ class TextView extends React.Component<TextViewProps> {
             this.scrollToActiveEvent()
             mobx.runInAction(() => {
                 this.props.uiStore.shouldScrollToEvent = false;
-            }
+            })
         } 
     }
 }
