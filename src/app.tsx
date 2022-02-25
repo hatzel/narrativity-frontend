@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import "reflect-metadata";
 
 import Plot from "react-plotly.js";
-import { observer } from "mobx-react";
+import { MobXProviderContext, observer } from "mobx-react";
 import { observable, computed, action } from "mobx";
 import * as mobx from "mobx";
 import { plainToInstance } from "class-transformer";
@@ -33,6 +33,7 @@ export class RootStore {
 class UiStore {
     @observable currentText: string = "";
     @observable activeNarrativeEventId: string | undefined = undefined;
+    @observable hoveredNarrativeEventId: string | undefined = undefined;
     shouldScrollToEvent: boolean = false;
     @observable loading = false;
 
@@ -210,7 +211,7 @@ class EventGraph extends React.Component<EventGraphProps, any> {
                 xaxis: {
                     range: [0, this.props.annotationStore.annotations.length],
                     title: {
-                        text: "Event Number"
+                        text: "Event Index"
                     }
                 },
                 yaxis: {
@@ -280,43 +281,97 @@ class TextView extends React.Component<TextViewProps> {
         }
     }
 
+
+    buildSpanList(annotations: NarrativeEvent[]) {
+        let spans: Array<[[number, number], NarrativeEvent]> = [];
+        for (let anno of annotations) {
+            for (let span of anno.spans) {
+                spans.push([span, anno]);
+            }
+        }
+        spans.sort((a: [[number, number], NarrativeEvent], b: [[number, number], NarrativeEvent]) => {
+            if (a[0][0] > b[0][0]) {
+                return 1;
+            } else if (a[0][0] == b[0][0]) {
+                return 0;
+            } else {
+                return -1; 
+            }
+        });
+        let toDelete = [];
+        // Sanity check, we don't want overlapping spans!
+        for (let i = 0; i < (spans.length - 1); i++) {
+            if (spans[i][0][1] > spans[i + 1][0][0]) {
+                console.warn("Overlapping spans, discarding a span!")
+                toDelete.push(i + 1);
+            }
+        }
+        for (let i = 0; i < spans.length; i++) {
+            if (Math.abs(spans[i][0][1] - spans[i][0][0]) <= 2) {
+                toDelete.push(i);
+            }
+        }
+        let unqiueDeletions = [...new Set(toDelete)];
+        unqiueDeletions.sort((a, b): number => b - a);
+        for (let entry of unqiueDeletions) {
+           spans.splice(entry, 1);
+        }
+        return spans
+    }
+
+    buildAnnotationsComponents(text: string, annotations: NarrativeEvent[], startIndex: number) {
+        let spans = this.buildSpanList(annotations);
+        let inner: any[] = [];
+        let indexInParagraph = 0;
+        for (let span of spans) {
+            inner.push(text.slice(indexInParagraph, span[0][0] - startIndex));
+            let spanStart = span[0][0] - startIndex;
+            let spanEnd = Math.min(
+                span[0][1] - startIndex,
+                startIndex + text.length
+            );
+            let props: React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement> = {
+                className: "verbPhrase",
+                "id": span[1].getId(),
+                onMouseEnter: () => {mobx.runInAction(() => {
+                    this.props.uiStore.hoveredNarrativeEventId = span[1].getId();
+                })},
+                onMouseLeave: () => {mobx.runInAction(() => {
+                    this.props.uiStore.hoveredNarrativeEventId = undefined;
+                })},
+                ref: null
+            };
+            if (span[1].getId() == this.props.uiStore.activeNarrativeEventId) {
+                props.ref = this.activeNarrativeEvent;
+                props.className += " activeScrolled"
+            }
+            if (span[1].getId() == this.props.uiStore.hoveredNarrativeEventId) {
+                props.className += " activeHovered"
+            }
+            let eventKind = EventKindUtil.toString(span[1].predicted);
+            let subscriptClass =  "eventKindAnno " + eventKind;
+            inner.push(
+                React.createElement(
+                    "span",
+                    props,
+                    [text.slice(spanStart, spanEnd), <sub className={subscriptClass}>{eventKind}</sub>]
+                )
+            );
+            indexInParagraph = spanEnd;
+        }
+        // Append the rest
+        inner.push(text.slice(indexInParagraph, text.length))
+        return inner;
+    }
+
     render() {
         let paragraphs: React.DetailedReactHTMLElement<{}, HTMLElement>[] = [];
         let startIndex: number = 0;
         let n = 0;
         for (let paragraphText of this.props.annotationStore.submitText.split("\n\n")) {
-            let annotations = this.getRelevantAnnotaitons(startIndex, startIndex + paragraphText.length)
-            let inner: any[] = []
-            let paragraphIndex = 0;
-            // TODO: this is currently broken annotations in other annotations
-            for (let anno of annotations) {
-                inner.push(paragraphText.slice(paragraphIndex, anno.start - startIndex));
-                let spanStart = anno.start - startIndex;
-                let spanEnd = Math.min(
-                    anno.end - startIndex,
-                    startIndex + paragraphText.length
-                );
-                let props: {className: string, id: string, ref: React.RefObject<HTMLSpanElement> | null} = {
-                    className: "verbPhrase",
-                    "id": anno.getId(),
-                    ref: null
-                };
-                if (anno.getId() == this.props.uiStore.activeNarrativeEventId) {
-                    props.ref = this.activeNarrativeEvent;
-                    props.className += " active"
-                }
-                let eventKind = EventKindUtil.toString(anno.predicted);
-                let subscriptClass =  "eventKindAnno " + eventKind;
-                inner.push(
-                    React.createElement(
-                        "span",
-                        props,
-                        [paragraphText.slice(spanStart, spanEnd), <sub className={subscriptClass}>{eventKind}</sub>]
-                    )
-                );
-                paragraphIndex = spanEnd;
-            }
-            inner.push(paragraphText.slice(paragraphIndex, paragraphText.length))
+            let annotationsIterator = this.getRelevantAnnotaitons(startIndex, startIndex + paragraphText.length)
+            let annotations: NarrativeEvent[] = Array.from(annotationsIterator)
+            let inner = this.buildAnnotationsComponents(paragraphText, annotations, startIndex);
             paragraphs.push(React.createElement("p", {key: "pargraph" + n.toString()}, inner));
             startIndex += paragraphText.length;
             startIndex += 2;

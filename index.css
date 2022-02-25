@@ -103,11 +103,11 @@ button[type="submit"] {
     display: none;
 }
 
-.verbPhrase:hover .eventKindAnno {
+.verbPhrase.activeHovered .eventKindAnno {
     display: inline;
 }
 
-.verbPhrase.active .eventKindAnno {
+.verbPhrase.activeScrolled .eventKindAnno {
     display: inline;
 }
 
@@ -115,11 +115,11 @@ button[type="submit"] {
     transition: 0.3s;
 }
 
-.verbPhrase.active {
+.verbPhrase.activeScrolled {
     background-color: lightcoral;
 }
 
-.verbPhrase:hover {
+.verbPhrase.activeHovered {
     background-color: lightskyblue;
 }
 
