@@ -47,7 +47,7 @@ export class AnnotationStore {
     }
 
     fetchEventAnnotations(text: string, uiStore: UiStore) {
-        let promise = fetch("http://localhost:8080/predictions/ts_test", {
+        let promise = fetch("/predictions/ts_test", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

@@ -1,0 +1,5 @@
+{
+    "/predictions/ts_test": {
+        "target": "http://127.0.01:8080/predictions/ts_test",
+    }
+}
