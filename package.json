@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "parcel index.html"
+    "start": "parcel index.html",
+    "build": "parcel build index.html",
+    "build-docker": "parcel build --no-content-hash --no-source-maps --dist-dir docker/dist index.html"
   },
   "devDependencies": {
     "@parcel/reporter-bundle-analyzer": "^2.3.2",
