@@ -50,6 +50,7 @@ export class NarrativeEvent {
 
     @Expose()
     @Transform(({ value }) => EventKindUtil.fromString(value), { toClassOnly: true })
+    @Transform(({ value }) => EventKindUtil.toString(value), { toPlainOnly: true })
     predicted: EventKind
 
     @Expose({name: "predicted_score"}) predictedScore: number
