@@ -9,6 +9,7 @@ import ErrorBox from "./components/errorBox";
 
 import { NarrativeEvent, EventKindUtil } from "./schemas/events";
 import LoadingOverlay from "react-loading-overlay";
+import { DEFAULT_TEXT } from "./text";
 
 mobx.configure({
     enforceActions: "always",
@@ -76,7 +77,7 @@ class TextForm extends React.Component<TextFormProps, any> {
     render() {
         return <div className="formContainer">
             <form onSubmit={this.handleSubmit} id="inputForm">
-                <textarea name="inputText" defaultValue="Ich teste das narrativiäts Modell!"/>
+                <textarea name="inputText" defaultValue={DEFAULT_TEXT}/>
                 <button type="submit">Submit</button>
             </form>
         </div>
