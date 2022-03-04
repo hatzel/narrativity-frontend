@@ -188,6 +188,7 @@ type Span {
     start: number,
     end: number,
     isLast: boolean,
+    annoId: number,
 };
 
 @observer
@@ -204,7 +205,7 @@ class TextView extends React.Component<TextViewProps> {
         for (let annotation of this.props.annotationStore.annotations) {
             if (annotation.start >= start && annotation.start <= end) {
                 if (annotation.end > end) {
-                    console.warn("Annotation across paragraphs");
+                    //console.warn("Annotation across paragraphs");
                     yield annotation;
                 } else {
                     yield annotation;
@@ -216,16 +217,15 @@ class TextView extends React.Component<TextViewProps> {
 
     buildSpanList(annotations: NarrativeEvent[]) {
         let spans: Array<[Span, NarrativeEvent]> = [];
-        for (let anno of annotations) {
+        for (let [i, anno] of annotations.entries()) {
             for (let span of anno.spans) {
                 spans.push([{
                     start: span[0],
                     end: span[1],
                     isLast: false,
+                    annoId: i,
                 }, anno]);
             }
-            // Set isLast to true for the last span in any annotaiton
-            spans[spans.length - 1][0].isLast = true;
         }
         spans.sort((a: [Span, NarrativeEvent], b: [Span, NarrativeEvent]) => {
             if (a[0].start > b[0].start) {
@@ -240,7 +240,7 @@ class TextView extends React.Component<TextViewProps> {
         // Sanity check, we don't want overlapping spans!
         for (let i = 0; i < (spans.length - 1); i++) {
             if (spans[i][0].end > spans[i + 1][0].start) {
-                console.warn("Overlapping spans, discarding a span!")
+                //console.warn("Overlapping spans, discarding a span!")
                 toDelete.push(i + 1);
             }
         }
@@ -253,6 +253,14 @@ class TextView extends React.Component<TextViewProps> {
         unqiueDeletions.sort((a, b): number => b - a);
         for (let entry of unqiueDeletions) {
            spans.splice(entry, 1);
+        }
+        let seen: Set<number> = new Set();
+        for (let pos = spans.length - 1; pos >= 0; pos--) {
+            let currentId = spans[pos][0].annoId;
+            if (!seen.has(currentId)) {
+                spans[pos][0].isLast = true;
+                seen.add(currentId)
+            }
         }
         return spans
     }
