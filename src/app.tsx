@@ -183,6 +183,12 @@ interface TextViewProps {
     uiStore: UiStore;
 }
 
+type Span {
+    start: number,
+    end: number,
+    isLast: boolean,
+};
+
 @observer
 class TextView extends React.Component<TextViewProps> {
     activeNarrativeEvent: React.RefObject<HTMLSpanElement> = React.createRef();
@@ -208,16 +214,22 @@ class TextView extends React.Component<TextViewProps> {
 
 
     buildSpanList(annotations: NarrativeEvent[]) {
-        let spans: Array<[[number, number], NarrativeEvent]> = [];
+        let spans: Array<[Span, NarrativeEvent]> = [];
         for (let anno of annotations) {
             for (let span of anno.spans) {
-                spans.push([span, anno]);
+                spans.push([{
+                    start: span[0],
+                    end: span[1],
+                    isLast: false,
+                }, anno]);
             }
+            // Set isLast to true for the last span in any annotaiton
+            spans[spans.length - 1][0].isLast = true;
         }
-        spans.sort((a: [[number, number], NarrativeEvent], b: [[number, number], NarrativeEvent]) => {
-            if (a[0][0] > b[0][0]) {
+        spans.sort((a: [Span, NarrativeEvent], b: [Span, NarrativeEvent]) => {
+            if (a[0].start > b[0].start) {
                 return 1;
-            } else if (a[0][0] == b[0][0]) {
+            } else if (a[0].start == b[0].start) {
                 return 0;
             } else {
                 return -1; 
@@ -226,13 +238,13 @@ class TextView extends React.Component<TextViewProps> {
         let toDelete = [];
         // Sanity check, we don't want overlapping spans!
         for (let i = 0; i < (spans.length - 1); i++) {
-            if (spans[i][0][1] > spans[i + 1][0][0]) {
+            if (spans[i][0].end > spans[i + 1][0].start) {
                 console.warn("Overlapping spans, discarding a span!")
                 toDelete.push(i + 1);
             }
         }
         for (let i = 0; i < spans.length; i++) {
-            if (Math.abs(spans[i][0][1] - spans[i][0][0]) <= 2) {
+            if (Math.abs(spans[i][0].end - spans[i][0].start) <= 2) {
                 toDelete.push(i);
             }
         }
@@ -249,10 +261,10 @@ class TextView extends React.Component<TextViewProps> {
         let inner: any[] = [];
         let indexInParagraph = 0;
         for (let span of spans) {
-            inner.push(text.slice(indexInParagraph, span[0][0] - startIndex));
-            let spanStart = span[0][0] - startIndex;
+            inner.push(text.slice(indexInParagraph, span[0].start - startIndex));
+            let spanStart = span[0].start - startIndex;
             let spanEnd = Math.min(
-                span[0][1] - startIndex,
+                span[0].end - startIndex,
                 startIndex + text.length
             );
             let props: React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement> = {
@@ -275,11 +287,15 @@ class TextView extends React.Component<TextViewProps> {
             }
             let eventKind = EventKindUtil.toString(span[1].predicted);
             let subscriptClass =  "eventKindAnno " + eventKind;
+            let span_html: any[] = [text.slice(spanStart, spanEnd)];
+            if (span[0].isLast) {
+                span_html.push(<sub className={subscriptClass}>{eventKind}</sub>);
+            }
             inner.push(
                 React.createElement(
                     "span",
                     props,
-                    [text.slice(spanStart, spanEnd), <sub className={subscriptClass}>{eventKind}</sub>]
+                    span_html,
                 )
             );
             indexInParagraph = spanEnd;
