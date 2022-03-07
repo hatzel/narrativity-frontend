@@ -1,5 +1,5 @@
 import { plainToInstance } from "class-transformer";
-import * as tidy from "@tidyjs/tidy";
+import { gaussianAverage } from "./smoothing";
 import { observable, computed } from "mobx";
 import * as mobx from "mobx";
 
@@ -80,14 +80,14 @@ export class AnnotationStore {
     @computed
     get smoothyValues(): number[] {
         let values = this.yValues.map((el): object => { return {value: el} });
-        let out = tidy.tidy(
-            this.annotations,
-            tidy.map((el) => {return {value: el.predictedScore}}),
-            tidy.mutateWithSummary({
-                movingAvg: tidy.roll(this.smoothingConfig.windowSize, tidy.mean("value"), {partial: true}),
-            }),
-        );
-        return out.map((el) => el["movingAvg"])
+        let smoothed: number[] = [];
+        for (let i = 0; i < this.yValues.length; i++) {
+            let offset = Math.floor(this.smoothingConfig.windowSize / 2);
+            let window = this.yValues.slice(Math.max(0, i - offset), Math.min(this.yValues.length, i + offset))
+            smoothed.push(gaussianAverage(window, 5));
+        }
+        console.log(smoothed);
+        return smoothed;
     }
 
     @computed
