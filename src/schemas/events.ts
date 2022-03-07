@@ -2,9 +2,9 @@ import { Expose, Type, Transform } from "class-transformer";
 
 enum EventKind {
     NON_EVENT = 0,
-    CHANGE_OF_STATE = 1,
-    PROCESS = 2,
-    STATIVE_EVENT = 3,
+    CHANGE_OF_STATE = 7,
+    PROCESS = 5,
+    STATIVE_EVENT = 2,
 }
 
 export class EventKindUtil {
