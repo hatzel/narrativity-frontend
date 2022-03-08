@@ -51,7 +51,7 @@ export class EventKindConfig {
 
     static all(): EventKindConfig[] {
         let out = [];
-        let defaultScores = [0, 2, 5, 7];
+        let defaultScores = [7, 5, 2, 0];
         for(let i = 0; i < 4; i++) {
             out.push(
                 new EventKindConfig(
@@ -115,7 +115,6 @@ export class AnnotationStore {
             let window = this.yValues.slice(Math.max(0, i - offset), Math.min(this.yValues.length, i + offset))
             smoothed.push(gaussianAverage(window, 5));
         }
-        console.log(smoothed);
         return smoothed;
     }
 
@@ -125,7 +124,6 @@ export class AnnotationStore {
         for (let eventType of this.eventTypes) {
             eventScores[eventType.name] = eventType.score
         }
-        console.log(eventScores)
         return this.annotations.map((anno) => {
             return eventScores[EventKindUtil.toString(anno.predicted)];
         });
