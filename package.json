@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "start": "parcel index.html",
-    "build": "parcel build index.html",
-    "build-docker": "parcel build --no-content-hash --no-source-maps --dist-dir docker/dist index.html"
+    "start": "yarn gen-licenses && parcel index.html dist/licenses.txt",
+    "gen-licenses": "yarn licenses generate-disclaimer > dist/licenses.txt",
+    "build": "yarn gen-licenses && parcel build index.html dist/licenses.txt",
+    "licenses-docker": "yarn licenses generate-disclaimer > docker/dist/licenses.txt",
+    "build-docker": "yarn gen-licenses && parcel build --no-content-hash --no-source-maps --dist-dir docker/dist index.html dist/licenses.txt"
   },
   "devDependencies": {
     "@parcel/packager-raw-url": "2.3.2",

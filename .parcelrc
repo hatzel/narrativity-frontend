@@ -4,6 +4,7 @@
         "*.{ts,tsx}": ["@parcel/validator-typescript"]
     },
     "transformers": {
-        "*.{ts,tsx}": ["@parcel/transformer-typescript-tsc"]
+        "*.{ts,tsx}": ["@parcel/transformer-typescript-tsc"],
+        "dist/licenses.txt": ["@parcel/transformer-raw"]
     }
 }
