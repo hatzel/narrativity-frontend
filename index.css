@@ -37,7 +37,14 @@ section {
 
 .headline {
     background: lightblue;
+    display: flex;
+    align-items: center;
     box-shadow: var(--box-shadow) var(--color-shadow);
+}
+.headline img {
+    height: 50pt;
+    padding: 5pt;
+    padding-right: 20pt;
 }
 
 textarea {
