@@ -11,6 +11,7 @@ import { NarrativeEvent, EventKindUtil } from "./schemas/events";
 import LoadingOverlay from "react-loading-overlay";
 import { DEFAULT_TEXT } from "./text";
 import SizeSelector from "./components/scoreSelector";
+import ExplainerBox from "./components/explainerBox";
 
 mobx.configure({
     enforceActions: "always",
@@ -35,25 +36,33 @@ export class App extends React.Component<AppProps, any> {
         } else {
             errorBox = <></>
         }
-        return <LoadingOverlay
-                active={rootStore.uiStore.loading}
-                spinner
-                text="Running Model"
-            >
-                <div className="column controlContainer">
-                    <ErrorBox
-                        text={this.props.rootStore.uiStore.errorText}
-                        visible={this.props.rootStore.uiStore.showingError}
-                        closeCallback={() => {this.props.rootStore.uiStore.showingError = false}}
-                    />
-                    <TextForm rootStore={rootStore} />
-                    <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
-                    <SizeSelector annotationStore={this.props.rootStore.annotationStore} />
-                </div>
-                <div className="column textContainer">
-                    <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
-                </div>
-            </LoadingOverlay>
+        return <>
+                <ExplainerBox
+                    visible={this.props.rootStore.uiStore.showingExplainerBox}
+                    toggleCallback={() => mobx.runInAction(() => {
+                        this.props.rootStore.uiStore.showingExplainerBox = !this.props.rootStore.uiStore.showingExplainerBox
+                    })}
+                />
+                <LoadingOverlay
+                    active={rootStore.uiStore.loading}
+                    spinner
+                    text="Running Model"
+                >
+                    <div className="column controlContainer">
+                        <ErrorBox
+                            text={this.props.rootStore.uiStore.errorText}
+                            visible={this.props.rootStore.uiStore.showingError}
+                            closeCallback={() => {this.props.rootStore.uiStore.showingError = false}}
+                        />
+                        <TextForm rootStore={rootStore} />
+                        <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+                        <SizeSelector annotationStore={this.props.rootStore.annotationStore} />
+                    </div>
+                    <div className="column textContainer">
+                        <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+                    </div>
+                </LoadingOverlay>
+            </>
     }
 }
 
