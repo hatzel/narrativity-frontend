@@ -119,7 +119,7 @@ class EventGraph extends React.Component<EventGraphProps, any> {
     }
 
     sliderChange = (event: Plotly.SliderChangeEvent) => {
-        if event.slider.currentvalue.prefix?.startsWith("Window Size") {
+        if (event.slider.currentvalue.prefix?.startsWith("Window Size")) {
             mobx.runInAction(() => {
                 this.props.annotationStore.smoothingConfig.windowSize = parseInt(event.step.label);
             });
@@ -196,7 +196,7 @@ interface TextViewProps {
     uiStore: UiStore;
 }
 
-type Span {
+type Span = {
     start: number,
     end: number,
     isLast: boolean,
