@@ -59,7 +59,7 @@ export default class ExplainerBox extends React.Component<ExplainerBoxProps, any
         return <div className="explainerBox">
             <div className="explainerHeading">
                 <h3>{ExplainerBox.HEADLINE}</h3>
-                <div className="clickable" onClick={(e) => this.props.toggleCallback(e)}>{icon}</div>
+                <div className="clickable" onClick={(e) => this.props.toggleCallback(e)}><b>{icon}</b></div>
             </div>
             {content}
         </div>

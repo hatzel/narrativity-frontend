@@ -22,7 +22,7 @@ export class UiStore {
     shouldScrollToEvent: boolean = false;
     @observable loading = false;
     @observable showingError = false;
-    @observable showingExplainerBox = false;
+    @observable showingExplainerBox = true;
     @observable errorText = "";
 
     constructor() {
