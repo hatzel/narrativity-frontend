@@ -82,7 +82,7 @@ textarea {
     padding: 5px 20px;
     overflow: auto;
     flex-basis: 20rem;
-    height: 75vh;
+    height: 80vh;
     flex-grow: 1;
     flex-shrink: 1;
     max-width: 60rem;
@@ -92,7 +92,7 @@ textarea {
     border: 1px solid var(--color-bg-secondary);
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow) var(--color-shadow);
-    height: 75vh;
+    height: 80vh;
     display: flex;
     flex-flow: column;
     justify-content: space-between;
@@ -186,13 +186,15 @@ button[type="submit"] {
     min-width: 100%;
     padding: 10px;
     display: flex;
-    justify-content: space-evenly;
+    justify-content: space-around;
     align-content: space-between;
     background: var(--color-accent);
 }
 
 .footer div {
-    padding: 5px;
+    margin: 7px;
+    margin-left: 20px;
+    margin-right: 20px;
 }
 
 .scoreSelector {
