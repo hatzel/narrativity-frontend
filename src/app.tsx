@@ -10,6 +10,7 @@ import ErrorBox from "./components/errorBox";
 import { NarrativeEvent, EventKindUtil } from "./schemas/events";
 import LoadingOverlay from "react-loading-overlay";
 import { DEFAULT_TEXT } from "./text";
+import SizeSelector from "./components/scoreSelector";
 
 mobx.configure({
     enforceActions: "always",
@@ -47,6 +48,7 @@ export class App extends React.Component<AppProps, any> {
                     />
                     <TextForm rootStore={rootStore} />
                     <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+                    <SizeSelector annotationStore={this.props.rootStore.annotationStore} />
                 </div>
                 <div className="column textContainer">
                     <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
@@ -84,7 +86,7 @@ class TextForm extends React.Component<TextFormProps, any> {
     }
 }
 
-let sliderSteps = (): Partial<Plotly.SliderStep>[] => {
+let smoothingSliderSteps = (): Partial<Plotly.SliderStep>[] => {
     let out: Partial<Plotly.SliderStep>[] = [];
     for (let i = 10; i<=100; i += 10) {
         out.push({
@@ -117,9 +119,13 @@ class EventGraph extends React.Component<EventGraphProps, any> {
     }
 
     sliderChange = (event: Plotly.SliderChangeEvent) => {
-        mobx.runInAction(() => {
-            this.props.annotationStore.smoothingConfig.windowSize = parseInt(event.step.label);
-        });
+        if event.slider.currentvalue.prefix?.startsWith("Window Size") {
+            mobx.runInAction(() => {
+                this.props.annotationStore.smoothingConfig.windowSize = parseInt(event.step.label);
+            });
+        } else {
+
+        }
     }
 
     onClick = (event: Plotly.PlotMouseEvent) => {
@@ -129,8 +135,24 @@ class EventGraph extends React.Component<EventGraphProps, any> {
         });
     }
 
+    buildSliders(): Partial<Plotly.Slider>[] {
+        let sliders: Partial<Plotly.Slider>[] = [{
+            pad: {t: 80},
+            currentvalue: {
+                xanchor: "left",
+                prefix: "Window Size: ",
+                font: {
+                    color: '#888',
+                    size: 12
+                }
+            },
+            steps: smoothingSliderSteps()
+        }];
+        return sliders;
+    }
+
     render() {
-        return <Plot
+        return <div className="plotContainer"><Plot
             layout={{
                 title: "Narrativity Plot",
                 autosize: false,
@@ -147,18 +169,8 @@ class EventGraph extends React.Component<EventGraphProps, any> {
                     }
                 },
                 width: 800,
-                sliders: [{
-                    pad: {t: 80},
-                    currentvalue: {
-                        xanchor: "left",
-                        prefix: "Window Size: ",
-                        font: {
-                            color: '#888',
-                            size: 12
-                        }
-                    },
-                    steps: sliderSteps()
-                }],
+                height: 400,
+                sliders: this.buildSliders(),
                 transition: {
                     easing: "linear",
                     duration: 300
@@ -175,7 +187,7 @@ class EventGraph extends React.Component<EventGraphProps, any> {
                 type: 'scatter'
             }]}
             onSliderChange={this.sliderChange}
-        />
+        /></div>
     }
 }
 

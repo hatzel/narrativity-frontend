@@ -3,7 +3,7 @@ import { gaussianAverage } from "./smoothing";
 import { observable, computed } from "mobx";
 import * as mobx from "mobx";
 
-import { Response, NarrativeEvent } from "./schemas/events";
+import { Response, NarrativeEvent, EventKind, EventKindUtil } from "./schemas/events";
 
 
 export class RootStore {
@@ -37,10 +37,39 @@ class SmoothingConfig {
     }
 }
 
+export class EventKindConfig {
+    @observable name: string
+    @observable eventKind: EventKind
+    @observable score: number
+
+    constructor(name: string, eventKind: EventKind, score: number) {
+        this.name = name;
+        this.eventKind = eventKind;
+        this.score = score;
+        mobx.makeObservable(this)
+    }
+
+    static all(): EventKindConfig[] {
+        let out = [];
+        let defaultScores = [0, 2, 5, 7];
+        for(let i = 0; i < 4; i++) {
+            out.push(
+                new EventKindConfig(
+                    EventKindUtil.toString(i),
+                    i,
+                    defaultScores[i],
+                )
+            )
+        }
+        return out;
+    }
+}
+
 export class AnnotationStore {
     @observable submitText: string = "";
     @observable annotations: NarrativeEvent[] = [];
     @observable smoothingConfig: SmoothingConfig = new SmoothingConfig();
+    @observable eventTypes: EventKindConfig[] = EventKindConfig.all();
 
     constructor() {
         mobx.makeObservable(this)
@@ -92,7 +121,14 @@ export class AnnotationStore {
 
     @computed
     get yValues(): number[] {
-        return this.annotations.map((anno) => anno.predictedScore);
+        let eventScores: { [key: string]: number; } = {};
+        for (let eventType of this.eventTypes) {
+            eventScores[eventType.name] = eventType.score
+        }
+        console.log(eventScores)
+        return this.annotations.map((anno) => {
+            return eventScores[EventKindUtil.toString(anno.predicted)];
+        });
     }
 
     @computed

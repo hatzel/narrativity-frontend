@@ -1,10 +1,10 @@
 import { Expose, Type, Transform } from "class-transformer";
 
-enum EventKind {
-    NON_EVENT = 0,
-    CHANGE_OF_STATE = 1,
-    PROCESS = 2,
-    STATIVE_EVENT = 3,
+export enum EventKind {
+    CHANGE_OF_STATE = 0,
+    PROCESS = 1,
+    STATIVE_EVENT = 2,
+    NON_EVENT = 3,
 }
 
 export class EventKindUtil {
@@ -24,7 +24,7 @@ export class EventKindUtil {
         throw "Invalid Event variant" + name;
     }
 
-    static toString(eventType: EventKind) {
+    static toString(eventType: EventKind): string {
         if (eventType == EventKind.NON_EVENT) {
             return "non_event";
         }
@@ -37,6 +37,7 @@ export class EventKindUtil {
         if (eventType == EventKind.STATIVE_EVENT) {
             return "stative_event";
         }
+        throw "Illeagal variant"
     }
 }
 

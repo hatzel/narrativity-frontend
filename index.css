@@ -89,9 +89,17 @@ textarea {
     display: flex;
     flex-flow: column;
     justify-content: space-between;
+    overflow-y: auto;
     align-items: stretch;
     flex-shrink: 0.5;
     flex-grow: 0;
+}
+
+.plotContainer {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    height: 500px;
 }
 
 button[type="submit"] {
@@ -177,4 +185,26 @@ button[type="submit"] {
 
 .footer div {
     padding: 5px;
+}
+
+.scoreSelector {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 2rem;
+    justify-content: center;
+}
+
+.scoreSelector div {
+    display: flex;
+    flex-flow: column nowrap;
+    flex-basis: 25%;
+    max-width: 150pt;
+}
+
+.scoreSelector div label {
+    max-width: 60pt;
+}
+
+.scoreSelector input {
+    width: 40%;
 }
