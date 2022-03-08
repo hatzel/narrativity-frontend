@@ -163,7 +163,7 @@ class EventGraph extends React.Component<EventGraphProps, any> {
                     }
                 },
                 yaxis: {
-                    range: [0, 5],
+                    range: [0, Math.max(...this.props.annotationStore.eventTypes.map((et) => et.score))],
                     title: {
                         text: "Smoothed Narrativity Score"
                     }
