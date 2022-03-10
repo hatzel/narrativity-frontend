@@ -2,6 +2,8 @@
 
 This is a web frontend to use the models created in our paper ["Automated Event Annotation in Literary Texts"](https://www.inf.uni-hamburg.de/en/inst/ab/lt/publications/2021-vauth-hatzel-chr.pdf).
 
+![Screenshot](/img/screenshot.png)
+
 Currently the models are not publicly available but they will be added here once they are.
 
 ## Development Setup
