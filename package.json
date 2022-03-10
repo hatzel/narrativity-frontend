@@ -1,6 +1,6 @@
 {
   "name": "narrativity-graph",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "MIT",
   "scripts": {
     "start": "yarn gen-licenses && parcel index.html dist/licenses.txt",
