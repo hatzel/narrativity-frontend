@@ -19,5 +19,5 @@ This will start the frontend including a proxy to models on localhost:8080, enab
 * `cd docker`
 * `docker build -t narrativity-frontend`
 
-When running the resulting docker container, supply the model server base URL like this:
-`docker run -e INFERENCE_URL="http://localhost:8080/" -it narrativity-frontend`
+When running the resulting docker container, supply the model server base URL and the path to precomputed JSON files like this:
+`docker run -e INFERENCE_URL="http://localhost:8080/" -v /host/path/to/json/files:/predictions -it narrativity-frontend`
