@@ -155,6 +155,11 @@ export class AnnotationStore {
                         } else {
                             this.submitText = ""
                         }
+                        // This is a disgusting workaround
+                        // We are unable to set a 'default' value for the plotly slider
+                        // Proper fix would be to move to a non-plotly slider or fix it in plotly
+                        // This way we at least don't lie about the current value.
+                        this.smoothingConfig.windowSize = 10;
                     });
                 })
             } else {
