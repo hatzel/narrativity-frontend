@@ -4,6 +4,8 @@ import { observable, computed } from "mobx";
 import * as mobx from "mobx";
 
 import { Response, NarrativeEvent, EventKind, EventKindUtil } from "./schemas/events";
+import { Book } from "./schemas/book";
+import { checkIfStateModificationsAreAllowed } from "mobx/dist/internal";
 
 
 export class RootStore {
@@ -24,6 +26,7 @@ export class UiStore {
     @observable showingError = false;
     @observable showingExplainerBox = true;
     @observable errorText = "";
+    @observable librarySearchText = "";
 
     constructor() {
         mobx.makeObservable(this)
@@ -71,25 +74,70 @@ export class AnnotationStore {
     @observable annotations: NarrativeEvent[] = [];
     @observable smoothingConfig: SmoothingConfig = new SmoothingConfig();
     @observable eventTypes: EventKindConfig[] = EventKindConfig.all();
+    @observable preannotatedIndex: Book[] = [];
 
     constructor() {
         mobx.makeObservable(this)
     }
 
+    fetchPrecomputedAnnotationIndex() {
+        let url = `/predictions_cached/index.json`;
+        let request = fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+        request.then(response => {
+            if (response.ok) {
+                response.json().then((data) => {
+                    let books = plainToInstance(Book, data as object, { excludeExtraneousValues: true }) as any;
+                    mobx.runInAction(() => {
+                        this.preannotatedIndex = books;
+                    });
+                })
+            } else {
+                console.warn("Requesting precomputed annotation index failed.")
+            }
+        })
+    }
+
+    fetchPrecomputedAnnotations(textId: string, uiStore: UiStore) {
+        let url = `/predictions_cached/${textId}.json`;
+        let request = fetch(url, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        })
+        return this._fetchEventAnnotations(request, uiStore);
+    }
+
     fetchEventAnnotations(text: string, uiStore: UiStore) {
-        let promise = fetch("/predictions/ts_test", {
+        let request = fetch("/predictions/ts_test", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({"text": text})
-        }).then(response => {
+        })
+        return this._fetchEventAnnotations(request, uiStore)
+    }
+
+    _fetchEventAnnotations(request: Promise<globalThis.Response>, uiStore: UiStore, submitText?: string) {
+        let promise = request.then(response => {
             if (response.ok) {
                 response.json().then((data) => {
                     let response = plainToInstance(Response, data as object, { excludeExtraneousValues: true });
                     mobx.runInAction(() => {
                         this.annotations = response.annotations;
-                        this.submitText = text;
+                        if (response.text !== undefined) {
+                            this.submitText = response.text;
+                        } else if (submitText !== undefined) {
+                            this.submitText = submitText;
+                        } else {
+                            this.submitText = ""
+                        }
                     });
                 })
             } else {

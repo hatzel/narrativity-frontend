@@ -8,3 +8,4 @@ let rootStore: RootStore = new RootStore();
 runInAction(() => {makeLocalStorage(rootStore.annotationStore)});
 const container: HTMLElement | null = document.getElementById("app");
 ReactDOM.render(<App rootStore={rootStore} />, container)
+rootStore.annotationStore.fetchPrecomputedAnnotationIndex();

@@ -70,6 +70,7 @@ export class NarrativeEvent {
 }
 
 export class Response {
+    @Expose()
     text: string
     @Expose()
     @Type(() => NarrativeEvent)

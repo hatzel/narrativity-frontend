@@ -265,3 +265,7 @@ button[type="submit"] {
 .explainerBox .explainerContent div {
     max-width: 50%;
 }
+
+.tableButton {
+    padding: 0.1rem 0.5rem;
+}

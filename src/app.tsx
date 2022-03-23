@@ -12,6 +12,7 @@ import LoadingOverlay from "react-loading-overlay";
 import { DEFAULT_TEXT } from "./text";
 import SizeSelector from "./components/scoreSelector";
 import ExplainerBox from "./components/explainerBox";
+import Library from "./components/library";
 
 mobx.configure({
     enforceActions: "always",
@@ -49,6 +50,7 @@ export class App extends React.Component<AppProps, any> {
                     text="Running Model"
                 >
                     <div className="column controlContainer">
+                        <Library books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
                         <ErrorBox
                             text={this.props.rootStore.uiStore.errorText}
                             visible={this.props.rootStore.uiStore.showingError}

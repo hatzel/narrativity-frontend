@@ -15,8 +15,10 @@
     "@parcel/transformer-typescript-tsc": "^2.3.2",
     "@parcel/transformer-webmanifest": "2.3.2",
     "@parcel/validator-typescript": "^2.3.1",
+    "http-proxy-middleware": "^2.0.4",
     "parcel": "^2.3.2",
     "process": "^0.11.10",
+    "serve-static": "^1.14.2",
     "typescript": ">=3.0.0"
   },
   "dependencies": {
@@ -27,6 +29,7 @@
     "@types/react-dom": "^17.0.11",
     "@types/react-loading-overlay": "^1.0.1",
     "@types/react-plotly.js": "^2.5.0",
+    "@types/styled-components": "^5.1.24",
     "buffer": "^6.0.3",
     "class-transformer": "^0.5.1",
     "d3": "^7.3.0",
@@ -36,9 +39,11 @@
     "plotly.js": "^2.9.0",
     "prop-types": "^15.8.1",
     "react": "^17.0.2",
+    "react-data-table-component": "^7.4.7",
     "react-dom": "^17.0.2",
     "react-loading-overlay": "^1.0.1",
     "react-plotly.js": "^2.5.1",
-    "reflect-metadata": "^0.1.13"
+    "reflect-metadata": "^0.1.13",
+    "styled-components": "^5.3.3"
   }
 }
