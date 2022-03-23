@@ -13,6 +13,7 @@ import { DEFAULT_TEXT } from "./text";
 import SizeSelector from "./components/scoreSelector";
 import ExplainerBox from "./components/explainerBox";
 import Library from "./components/library";
+import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 
 mobx.configure({
     enforceActions: "always",
@@ -37,6 +38,34 @@ export class App extends React.Component<AppProps, any> {
         } else {
             errorBox = <></>
         }
+        let contentSources = <>
+            <Tabs>
+                <TabList>
+                    <Tab>Precomputed Texts</Tab>
+                </TabList>
+
+                <TabPanel>
+                    <Library books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
+                </TabPanel>
+            </Tabs>
+        </>
+        if (rootStore.annotationStore.predictionServerAvailable) {
+            contentSources = <>
+                <Tabs>
+                    <TabList>
+                        <Tab>Custom Text</Tab>
+                        <Tab>Precomputed Texts</Tab>
+                    </TabList>
+
+                    <TabPanel>
+                        <TextForm rootStore={rootStore} />
+                    </TabPanel>
+                    <TabPanel>
+                        <Library books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
+                    </TabPanel>
+                </Tabs>
+            </>
+        } 
         return <>
                 <ExplainerBox
                     visible={this.props.rootStore.uiStore.showingExplainerBox}
@@ -50,13 +79,13 @@ export class App extends React.Component<AppProps, any> {
                     text="Running Model"
                 >
                     <div className="column controlContainer">
-                        <Library books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
                         <ErrorBox
                             text={this.props.rootStore.uiStore.errorText}
                             visible={this.props.rootStore.uiStore.showingError}
                             closeCallback={() => {this.props.rootStore.uiStore.showingError = false}}
                         />
-                        <TextForm rootStore={rootStore} />
+                        {contentSources}
+                        <hr></hr>
                         <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
                         <SizeSelector annotationStore={this.props.rootStore.annotationStore} />
                     </div>

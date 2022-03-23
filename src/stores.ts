@@ -75,9 +75,26 @@ export class AnnotationStore {
     @observable smoothingConfig: SmoothingConfig = new SmoothingConfig();
     @observable eventTypes: EventKindConfig[] = EventKindConfig.all();
     @observable preannotatedIndex: Book[] = [];
+    @observable predictionServerAvailable = false;
 
     constructor() {
         mobx.makeObservable(this)
+    }
+
+    checkPredictAvailability() {
+        let request = fetch("/predictions/ts_test", {
+            method: "OPTIONS",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        return request.then((resp) => {
+            if (resp.ok) {
+                mobx.runInAction(() => {
+                    this.predictionServerAvailable = true;
+                });
+            }
+        });
     }
 
     fetchPrecomputedAnnotationIndex() {
