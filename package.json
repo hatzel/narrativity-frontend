@@ -46,6 +46,7 @@
     "react-loading-overlay": "^1.0.1",
     "react-plotly.js": "^2.5.1",
     "react-tabs": "^4.0.1",
+    "react-virtual": "^2.10.4",
     "reflect-metadata": "^0.1.13",
     "styled-components": "^5.3.3"
   }

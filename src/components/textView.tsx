@@ -3,10 +3,26 @@ import { AnnotationStore, UiStore } from "../stores";
 import { NarrativeEvent, EventKindUtil } from "../schemas/events";
 import { observer } from "mobx-react";
 import * as mobx from "mobx";
+import { useVirtual } from "react-virtual";
 
 interface TextViewProps {
-    annotationStore: AnnotationStore;
+    annotations: NarrativeEvent[];
+    annotationsByStart: { [key: number]: NarrativeEvent[] }
+    paragraphs: string[];
     uiStore: UiStore;
+}
+
+export function buildAnnotationsByStart(annotations: NarrativeEvent[]) {
+    let starts: { [key: number]: NarrativeEvent[] } = {}
+    for (let annotation of annotations) {
+        let current = starts[annotation.start];
+        if (current !== undefined) {
+            starts[annotation.start].push(annotation)
+        } else {
+            starts[annotation.start] = [annotation]
+        }
+    }
+    return starts
 }
 
 type Span = {
@@ -16,29 +32,137 @@ type Span = {
     annoId: number,
 };
 
+function getParagraphExtents(paragraphTexts: string[]) {
+    let startIndex = 0;
+    let extents: [number, number][] =  [];
+    for (let paragraphText of paragraphTexts) {
+        extents.push([startIndex, startIndex + paragraphText.length]);
+        startIndex += paragraphText.length;
+        startIndex += 2;
+    }
+    return extents;
+}
+
+function * getRelevantAnnotaitons(annotationsByStart: { [key: number]: NarrativeEvent[] }, start: number, end: number) {
+    for (let i = start; i <= end; i++) {
+        for (let anno of (annotationsByStart[i] || [])) {
+            yield anno
+        }
+    }
+}
+
+
+export function TextView(props: TextViewProps): JSX.Element {
+    let paragraphTexts = props.paragraphs;
+    const parentRef = React.useRef<HTMLDivElement>(null);
+    const rowVirtualizer = useVirtual({
+        parentRef: parentRef,
+        size: paragraphTexts.length
+    })
+
+    let paragraphs: React.DetailedReactHTMLElement<{}, HTMLElement>[] = [];
+    let startIndex: number = 0;
+    let n = 0;
+    let extents = getParagraphExtents(paragraphTexts);
+    return <div className="" ref={parentRef} style={{
+        height: '100%',
+        width: '100%',
+        overflow: 'auto',
+    }}>
+        <div
+          style={{
+            height: rowVirtualizer.totalSize,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+        {rowVirtualizer.virtualItems.map((virtualRow: any) => {
+            let extent = extents[virtualRow.index];
+            let annotationsIterator = getRelevantAnnotaitons(props.annotationsByStart, extent[0], extent[1]);
+            let annotations: NarrativeEvent[] = Array.from(annotationsIterator)
+            let inner = <Annotation text={paragraphTexts[virtualRow.index]} annotations={annotations} startIndex={extent[0]} uiStore={props.uiStore}/>;
+            return <div
+                key={virtualRow.index}
+                ref={virtualRow.measureRef}
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    padding: '7px 40px',
+                    width: "calc(100% - 80px)",
+                    transform: `translateY(${virtualRow.start}px)`
+                }}
+            >
+                <div style={{height: paragraphTexts[virtualRow.index]}}>
+                    {inner}
+                </div>
+            </div>
+        })}
+        </div>
+    </div>
+}
+
+interface AnnotationProps {
+    text: string,
+    annotations: NarrativeEvent[],
+    startIndex: number,
+    uiStore: UiStore,
+}
+
 @observer
-export default class TextView extends React.Component<TextViewProps> {
-    activeNarrativeEvent: React.RefObject<HTMLSpanElement> = React.createRef();
-
-    scrollToActiveEvent = () => {
-        if (this.activeNarrativeEvent.current) {
-            this.activeNarrativeEvent.current.scrollIntoView({behavior: "smooth"});
-        }
-    }
-
-    * getRelevantAnnotaitons(this: TextView, start: number, end: number) {
-        for (let annotation of this.props.annotationStore.annotations) {
-            if (annotation.start >= start && annotation.start <= end) {
-                if (annotation.end > end) {
-                    //console.warn("Annotation across paragraphs");
-                    yield annotation;
-                } else {
-                    yield annotation;
-                }
+class Annotation extends React.Component<AnnotationProps> {
+    render() {
+        let text = this.props.text;
+        let startIndex = this.props.startIndex;
+        let spans = this.buildSpanList(this.props.annotations);
+        let inner: any[] = [];
+        let indexInParagraph = 0;
+        for (let span of spans) {
+            inner.push(text.slice(indexInParagraph, span[0].start - startIndex));
+            let spanStart = span[0].start - startIndex;
+            let spanEnd = Math.min(
+                span[0].end - startIndex,
+                startIndex + text.length
+            );
+            let props: React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement> = {
+                className: "verbPhrase",
+                "id": span[1].getId(),
+                onMouseEnter: () => {mobx.runInAction(() => {
+                    this.props.uiStore.hoveredNarrativeEventId = span[1].getId();
+                    console.log("Setting hovered narrative event id");
+                })},
+                onMouseLeave: () => {mobx.runInAction(() => {
+                    this.props.uiStore.hoveredNarrativeEventId = undefined;
+                })},
+                ref: null
+            };
+            if (span[1].getId() == this.props.uiStore.activeNarrativeEventId) {
+                // TODO: this was for scrolling evaluate if still needed
+                // props.ref = this.activeNarrativeEvent;
+                props.className += " activeScrolled"
             }
+            if (span[1].getId() == this.props.uiStore.hoveredNarrativeEventId) {
+                props.className += " activeHovered"
+            }
+            let eventKind = EventKindUtil.toString(span[1].predicted);
+            let subscriptClass =  "eventKindAnno " + eventKind;
+            let span_html: any[] = [text.slice(spanStart, spanEnd)];
+            if (span[0].isLast) {
+                span_html.push(<sub className={subscriptClass}>{eventKind}</sub>);
+            }
+            inner.push(
+                React.createElement(
+                    "span",
+                    props,
+                    span_html,
+                )
+            );
+            indexInParagraph = spanEnd;
         }
+        // Append the rest
+        inner.push(text.slice(indexInParagraph, text.length))
+        return inner;
     }
-
 
     buildSpanList(annotations: NarrativeEvent[]) {
         let spans: Array<[Span, NarrativeEvent]> = [];
@@ -88,81 +212,5 @@ export default class TextView extends React.Component<TextViewProps> {
             }
         }
         return spans
-    }
-
-    buildAnnotationsComponents(text: string, annotations: NarrativeEvent[], startIndex: number) {
-        let spans = this.buildSpanList(annotations);
-        let inner: any[] = [];
-        let indexInParagraph = 0;
-        for (let span of spans) {
-            inner.push(text.slice(indexInParagraph, span[0].start - startIndex));
-            let spanStart = span[0].start - startIndex;
-            let spanEnd = Math.min(
-                span[0].end - startIndex,
-                startIndex + text.length
-            );
-            let props: React.DetailedHTMLProps<React.HTMLAttributes<HTMLSpanElement>, HTMLSpanElement> = {
-                className: "verbPhrase",
-                "id": span[1].getId(),
-                onMouseEnter: () => {mobx.runInAction(() => {
-                    this.props.uiStore.hoveredNarrativeEventId = span[1].getId();
-                })},
-                onMouseLeave: () => {mobx.runInAction(() => {
-                    this.props.uiStore.hoveredNarrativeEventId = undefined;
-                })},
-                ref: null
-            };
-            if (span[1].getId() == this.props.uiStore.activeNarrativeEventId) {
-                props.ref = this.activeNarrativeEvent;
-                props.className += " activeScrolled"
-            }
-            if (span[1].getId() == this.props.uiStore.hoveredNarrativeEventId) {
-                props.className += " activeHovered"
-            }
-            let eventKind = EventKindUtil.toString(span[1].predicted);
-            let subscriptClass =  "eventKindAnno " + eventKind;
-            let span_html: any[] = [text.slice(spanStart, spanEnd)];
-            if (span[0].isLast) {
-                span_html.push(<sub className={subscriptClass}>{eventKind}</sub>);
-            }
-            inner.push(
-                React.createElement(
-                    "span",
-                    props,
-                    span_html,
-                )
-            );
-            indexInParagraph = spanEnd;
-        }
-        // Append the rest
-        inner.push(text.slice(indexInParagraph, text.length))
-        return inner;
-    }
-
-    render() {
-        let paragraphs: React.DetailedReactHTMLElement<{}, HTMLElement>[] = [];
-        let startIndex: number = 0;
-        let n = 0;
-        for (let paragraphText of this.props.annotationStore.submitText.split("\n\n")) {
-            let annotationsIterator = this.getRelevantAnnotaitons(startIndex, startIndex + paragraphText.length)
-            let annotations: NarrativeEvent[] = Array.from(annotationsIterator)
-            let inner = this.buildAnnotationsComponents(paragraphText, annotations, startIndex);
-            paragraphs.push(React.createElement("p", {key: "pargraph" + n.toString()}, inner));
-            startIndex += paragraphText.length;
-            startIndex += 2;
-            n++;
-        }
-        return <div className="">
-            {paragraphs}
-        </div>
-    }
-
-    componentDidUpdate() {
-        if (this.props.uiStore.shouldScrollToEvent) {
-            this.scrollToActiveEvent()
-            mobx.runInAction(() => {
-                this.props.uiStore.shouldScrollToEvent = false;
-            })
-        } 
     }
 }

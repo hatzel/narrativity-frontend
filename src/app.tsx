@@ -8,7 +8,7 @@ import { RootStore, UiStore, AnnotationStore } from "./stores";
 
 import LoadingOverlay from "react-loading-overlay";
 import { DEFAULT_TEXT } from "./text";
-import TextView from "./components/textView";
+import { TextView, buildAnnotationsByStart } from "./components/textView";
 import ErrorBox from "./components/errorBox";
 import SizeSelector from "./components/scoreSelector";
 import ExplainerBox from "./components/explainerBox";
@@ -90,7 +90,7 @@ export class App extends React.Component<AppProps, any> {
                         <SizeSelector annotationStore={this.props.rootStore.annotationStore} />
                     </div>
                     <div className="column textContainer">
-                        <TextView annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+                        <TextView annotations={rootStore.annotationStore.annotations} annotationsByStart={buildAnnotationsByStart(rootStore.annotationStore.annotations)} paragraphs={rootStore.annotationStore.submitText.split("\n\n")} uiStore={rootStore.uiStore} />
                     </div>
                 </LoadingOverlay>
             </>
