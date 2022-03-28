@@ -16,12 +16,12 @@ interface TextViewProps {
 export function buildAnnoIdToParagraphIndex(annotations: NarrativeEvent[], paragraphs: string[]): { [key: string]: number }{
     let out: { [key: string]: number } = {};
     let currentParagraph = 0;
-    let currentOffset = paragraphs[currentParagraph].length;
+    let currentOffset = paragraphs[currentParagraph].length + 2;
     for (let anno of annotations) {
         if (anno.start > currentOffset) {
             currentParagraph += 1;
             if (currentParagraph < paragraphs.length) {
-                currentOffset += paragraphs[currentParagraph].length;
+                currentOffset += paragraphs[currentParagraph].length + 2;
             } else {
                 break;
             }
