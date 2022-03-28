@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useImperativeHandle } from "react";
 import { AnnotationStore, UiStore } from "../stores";
 import { NarrativeEvent, EventKindUtil } from "../schemas/events";
 import { observer } from "mobx-react";
@@ -10,6 +10,25 @@ interface TextViewProps {
     annotationsByStart: { [key: number]: NarrativeEvent[] }
     paragraphs: string[];
     uiStore: UiStore;
+    idToParagraph: { [key: string]: number };
+}
+
+export function buildAnnoIdToParagraphIndex(annotations: NarrativeEvent[], paragraphs: string[]): { [key: string]: number }{
+    let out: { [key: string]: number } = {};
+    let currentParagraph = 0;
+    let currentOffset = paragraphs[currentParagraph].length;
+    for (let anno of annotations) {
+        if (anno.start > currentOffset) {
+            currentParagraph += 1;
+            if (currentParagraph < paragraphs.length) {
+                currentOffset += paragraphs[currentParagraph].length;
+            } else {
+                break;
+            }
+        }
+        out[anno.getId()] = currentParagraph;
+    }
+    return out;
 }
 
 export function buildAnnotationsByStart(annotations: NarrativeEvent[]) {
@@ -52,13 +71,34 @@ function * getRelevantAnnotaitons(annotationsByStart: { [key: number]: Narrative
 }
 
 
-export function TextView(props: TextViewProps): JSX.Element {
+interface ScrollableRef {
+  scrollToIndex: (index: number, options?: any) => void
+}
+
+interface ScrollableProps {
+    virtual: ScrollableRef;
+    idToParagraph: { [key: string]: number };
+}
+
+export class Scroller extends React.Component<ScrollableProps> {
+    scrollToId(id: string) {
+        let index: number = this.props.idToParagraph[id];
+        this.props.virtual.scrollToIndex(index);
+    }
+
+    render() {
+        return <></>
+    }
+}
+
+export const TextView = React.forwardRef<any, TextViewProps>((props, innerRef) => {
     let paragraphTexts = props.paragraphs;
     const parentRef = React.useRef<HTMLDivElement>(null);
     const rowVirtualizer = useVirtual({
         parentRef: parentRef,
         size: paragraphTexts.length
-    })
+    });
+
 
     let paragraphs: React.DetailedReactHTMLElement<{}, HTMLElement>[] = [];
     let startIndex: number = 0;
@@ -69,6 +109,7 @@ export function TextView(props: TextViewProps): JSX.Element {
         width: '100%',
         overflow: 'auto',
     }}>
+        <Scroller ref={innerRef} virtual={rowVirtualizer} idToParagraph={props.idToParagraph}></Scroller>
         <div
           style={{
             height: rowVirtualizer.totalSize,
@@ -100,7 +141,7 @@ export function TextView(props: TextViewProps): JSX.Element {
         })}
         </div>
     </div>
-}
+})
 
 interface AnnotationProps {
     text: string,
@@ -129,7 +170,6 @@ class Annotation extends React.Component<AnnotationProps> {
                 "id": span[1].getId(),
                 onMouseEnter: () => {mobx.runInAction(() => {
                     this.props.uiStore.hoveredNarrativeEventId = span[1].getId();
-                    console.log("Setting hovered narrative event id");
                 })},
                 onMouseLeave: () => {mobx.runInAction(() => {
                     this.props.uiStore.hoveredNarrativeEventId = undefined;
@@ -137,8 +177,6 @@ class Annotation extends React.Component<AnnotationProps> {
                 ref: null
             };
             if (span[1].getId() == this.props.uiStore.activeNarrativeEventId) {
-                // TODO: this was for scrolling evaluate if still needed
-                // props.ref = this.activeNarrativeEvent;
                 props.className += " activeScrolled"
             }
             if (span[1].getId() == this.props.uiStore.hoveredNarrativeEventId) {

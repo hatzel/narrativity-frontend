@@ -8,12 +8,13 @@ import { RootStore, UiStore, AnnotationStore } from "./stores";
 
 import LoadingOverlay from "react-loading-overlay";
 import { DEFAULT_TEXT } from "./text";
-import { TextView, buildAnnotationsByStart } from "./components/textView";
+import { TextView, buildAnnotationsByStart, Scroller, buildAnnoIdToParagraphIndex } from "./components/textView";
 import ErrorBox from "./components/errorBox";
 import SizeSelector from "./components/scoreSelector";
 import ExplainerBox from "./components/explainerBox";
 import Library from "./components/library";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
+import { useVirtual } from "react-virtual";
 
 mobx.configure({
     enforceActions: "always",
@@ -66,6 +67,8 @@ export class App extends React.Component<AppProps, any> {
                 </Tabs>
             </>
         } 
+        const scrollerRef: React.RefObject<Scroller> = React.createRef();
+        let paragraphs = rootStore.annotationStore.submitText.split("\n\n");
         return <>
                 <ExplainerBox
                     visible={this.props.rootStore.uiStore.showingExplainerBox}
@@ -86,11 +89,17 @@ export class App extends React.Component<AppProps, any> {
                         />
                         {contentSources}
                         <hr></hr>
-                        <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} />
+                        <EventGraph annotationStore={rootStore.annotationStore} uiStore={rootStore.uiStore} scrollerRef={scrollerRef}/>
                         <SizeSelector annotationStore={this.props.rootStore.annotationStore} />
                     </div>
                     <div className="column textContainer">
-                        <TextView annotations={rootStore.annotationStore.annotations} annotationsByStart={buildAnnotationsByStart(rootStore.annotationStore.annotations)} paragraphs={rootStore.annotationStore.submitText.split("\n\n")} uiStore={rootStore.uiStore} />
+                        <TextView
+                            annotations={rootStore.annotationStore.annotations}
+                            annotationsByStart={buildAnnotationsByStart(rootStore.annotationStore.annotations)}
+                            idToParagraph={buildAnnoIdToParagraphIndex(rootStore.annotationStore.annotations, paragraphs)}
+                            paragraphs={paragraphs}
+                            uiStore={rootStore.uiStore} ref={scrollerRef}
+                        />
                     </div>
                 </LoadingOverlay>
             </>
@@ -141,6 +150,7 @@ let smoothingSliderSteps = (): Partial<Plotly.SliderStep>[] => {
 interface EventGraphProps {
     annotationStore: AnnotationStore;
     uiStore: UiStore;
+    scrollerRef: React.RefObject<Scroller>;
 }
 
 @observer
@@ -169,10 +179,12 @@ class EventGraph extends React.Component<EventGraphProps, any> {
     }
 
     onClick = (event: Plotly.PlotMouseEvent) => {
+        console.log(this.props.scrollerRef.current)
+        let eventId = this.props.annotationStore.annotations[event.points[0].pointNumber].getId();
+        this.props.scrollerRef?.current?.scrollToId(this.props.annotationStore.annotations[event.points[0].pointNumber].getId());
         mobx.runInAction(() => {
-            this.props.uiStore.activeNarrativeEventId = this.props.annotationStore.annotations[event.points[0].pointNumber].getId()
-            this.props.uiStore.shouldScrollToEvent = true;
-        });
+            this.props.uiStore.activeNarrativeEventId = eventId;
+        })
     }
 
     buildSliders(): Partial<Plotly.Slider>[] {

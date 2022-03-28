@@ -20,8 +20,8 @@ export class RootStore {
 export class UiStore {
     @observable currentText: string = "";
     @observable activeNarrativeEventId: string | undefined = undefined;
+    @observable scrolledTo: number | undefined = undefined;
     @observable hoveredNarrativeEventId: string | undefined = undefined;
-    shouldScrollToEvent: boolean = false;
     @observable loading = false;
     @observable showingError = false;
     @observable showingExplainerBox = true;
