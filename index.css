@@ -295,3 +295,19 @@ button[type="submit"] {
 react-tabs {
     display: flex;
 }
+
+.searchRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.searchRow div {
+    padding: 0 10px;
+    padding-bottom: 5px;
+}
+
+.searchRow div * {
+    margin-bottom: 0;
+}

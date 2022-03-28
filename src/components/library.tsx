@@ -105,12 +105,20 @@ class Filter extends React.Component<FilterProps, any> {
     }
 
     render() {
-        return <input 
-            id="librarySearch"
-            type="text"
-            placeholder="Search Available Titles"
-            value={this.props.uiStore.librarySearchText}
-            onChange={this.valueChange}
-        />
+
+        return <div className="searchRow">
+            <div>
+                <label>Search d-Prose:</label>
+            </div>
+            <div>
+                <input
+                    id="librarySearch"
+                    type="text"
+                    placeholder="Title, Author or Year"
+                    value={this.props.uiStore.librarySearchText}
+                    onChange={this.valueChange}
+                />
+            </div>
+        </div>
     }
 }
