@@ -66,6 +66,7 @@ export default class Library extends React.Component<LibraryProps, any> {
             <Filter uiStore={this.props.uiStore}/>
                 <div className="listContainer">
                 <DataTable
+                    paginationPerPage={5}
                     pagination
                     columns={columnsBuilder(async (event: React.MouseEvent<HTMLButtonElement>) => {
                         let rowId: string | undefined = (event.target as HTMLButtonElement).parentElement?.parentElement?.id;
