@@ -33,6 +33,7 @@ interface AppProps {
 export class App extends React.Component<AppProps, any> {
     render() {
         const {rootStore} = this.props
+        const scrollerRef: React.RefObject<Scroller> = React.createRef();
         let errorBox;
         if (rootStore.uiStore.showingError) {
             errorBox = <div className="errorBox"><p>{rootStore.uiStore.errorText}</p></div>
@@ -46,7 +47,7 @@ export class App extends React.Component<AppProps, any> {
                 </TabList>
 
                 <TabPanel>
-                    <Library books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
+                    <Library scrollerRef={scrollerRef} books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
                 </TabPanel>
             </Tabs>
         </>
@@ -62,12 +63,11 @@ export class App extends React.Component<AppProps, any> {
                         <TextForm rootStore={rootStore} />
                     </TabPanel>
                     <TabPanel>
-                        <Library books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
+                        <Library scrollerRef={scrollerRef} books={this.props.rootStore.annotationStore.preannotatedIndex} uiStore={this.props.rootStore.uiStore} annotationStore={this.props.rootStore.annotationStore}/>
                     </TabPanel>
                 </Tabs>
             </>
         } 
-        const scrollerRef: React.RefObject<Scroller> = React.createRef();
         let paragraphs = rootStore.annotationStore.submitText.split("\n\n");
         return <>
                 <ExplainerBox

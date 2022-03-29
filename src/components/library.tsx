@@ -5,12 +5,14 @@ import React from "react";
 import DataTable from "react-data-table-component";
 import { Book } from "../schemas/book";
 import { AnnotationStore, UiStore } from "../stores";
+import { Scroller } from "./textView";
 
 
 interface LibraryProps {
     books: Book[],
     uiStore: UiStore,
     annotationStore: AnnotationStore,
+    scrollerRef: React.RefObject<Scroller>,
 }
 
 
@@ -78,6 +80,7 @@ export default class Library extends React.Component<LibraryProps, any> {
                             this.props.annotationStore.fetchPrecomputedAnnotations(dataId, this.props.uiStore).then(() => {
                                 runInAction(() => {
                                     this.props.uiStore.loading = false;
+                                    this.props.scrollerRef?.current?.scrollToTop();
                                 });
                             });
                         } else {

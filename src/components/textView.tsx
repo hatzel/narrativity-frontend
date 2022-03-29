@@ -86,6 +86,10 @@ export class Scroller extends React.Component<ScrollableProps> {
         this.props.virtual.scrollToIndex(index);
     }
 
+    scrollToTop() {
+        this.props.virtual.scrollToIndex(0);
+    }
+
     render() {
         return <></>
     }
