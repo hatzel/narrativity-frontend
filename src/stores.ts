@@ -159,7 +159,7 @@ export class AnnotationStore {
                         // We are unable to set a 'default' value for the plotly slider
                         // Proper fix would be to move to a non-plotly slider or fix it in plotly
                         // This way we at least don't lie about the current value.
-                        this.smoothingConfig.windowSize = 10;
+                        this.smoothingConfig.windowSize = 0;
                     });
                 })
             } else {
@@ -179,7 +179,9 @@ export class AnnotationStore {
 
     @computed
     get smoothyValues(): number[] {
-        let values = this.yValues.map((el): object => { return {value: el} });
+        if (this.smoothingConfig.windowSize == 0) {
+            return this.yValues;
+        }
         let smoothed: number[] = [];
         for (let i = 0; i < this.yValues.length; i++) {
             let offset = Math.floor(this.smoothingConfig.windowSize / 2);

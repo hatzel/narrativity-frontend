@@ -112,7 +112,7 @@ class Filter extends React.Component<FilterProps, any> {
                 <label>Search d-Prose:</label>
             </div>
             <div>
-                <input
+                <input 
                     id="librarySearch"
                     type="text"
                     placeholder="Title, Author or Year"

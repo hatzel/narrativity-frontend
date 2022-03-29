@@ -137,7 +137,7 @@ class TextForm extends React.Component<TextFormProps, any> {
 
 let smoothingSliderSteps = (): Partial<Plotly.SliderStep>[] => {
     let out: Partial<Plotly.SliderStep>[] = [];
-    for (let i = 10; i<=100; i += 10) {
+    for (let i = 0; i<=100; i += 10) {
         out.push({
             label: i.toString(),
             method: "update",
